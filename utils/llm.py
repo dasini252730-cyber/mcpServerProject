@@ -10,10 +10,11 @@ from langchain_anthropic import ChatAnthropic
 DEFAULT_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5")
 
 
-def get_llm(temperature: float = 0.3, max_tokens: int = 1024) -> ChatAnthropic:
+def get_llm(max_tokens: int = 1024) -> ChatAnthropic:
+    # claude-sonnet-5 및 이후 모델은 temperature 파라미터를 지원하지 않으므로
+    # (요청 시 400 invalid_request_error) 넘기지 않는다.
     return ChatAnthropic(
         model=DEFAULT_MODEL,
-        temperature=temperature,
         max_tokens=max_tokens,
     )
 
