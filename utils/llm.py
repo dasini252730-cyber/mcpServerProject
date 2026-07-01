@@ -19,6 +19,22 @@ def get_llm(max_tokens: int = 1024) -> ChatAnthropic:
     )
 
 
+def _content_to_text(content) -> str:
+    """최신 Claude 모델은 response.content로 문자열 대신 콘텐츠 블록 리스트를
+    반환하는 경우가 있어(예: [{"type": "text", "text": "..."}]), 텍스트만 이어붙인다."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+            elif isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "".join(parts)
+    return str(content)
+
+
 def _extract_json(text: str) -> dict:
     match = re.search(r"\{.*\}", text, re.DOTALL)
     if not match:
@@ -36,7 +52,7 @@ def call_llm_json(system_prompt: str, user_prompt: str, fallback: dict) -> dict:
                 ("human", user_prompt),
             ]
         )
-        return _extract_json(response.content)
+        return _extract_json(_content_to_text(response.content))
     except Exception as exc:  # noqa: BLE001 - 개별 Agent 실패가 전체 흐름을 막지 않도록 함
         result = dict(fallback)
         result["error"] = str(exc)
