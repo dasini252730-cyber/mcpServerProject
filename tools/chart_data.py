@@ -5,15 +5,16 @@ from ta.momentum import RSIIndicator
 from ta.trend import MACD, SMAIndicator
 from ta.volatility import BollingerBands
 
+from tools.yf_session import get_session
+
 
 def _history(ticker: str):
-    return yf.Ticker(ticker).history(period="1y")
+    return yf.Ticker(ticker, session=get_session()).history(period="1y")
 
 
 class ChartDataTool:
     @staticmethod
-    def get_moving_averages(ticker: str) -> dict:
-        hist = _history(ticker)
+    def get_moving_averages(hist) -> dict:
         if hist.empty:
             return {}
 
@@ -36,8 +37,7 @@ class ChartDataTool:
         return result
 
     @staticmethod
-    def get_rsi(ticker: str) -> dict:
-        hist = _history(ticker)
+    def get_rsi(hist) -> dict:
         if hist.empty or len(hist) < 15:
             return {"rsi": None, "signal": "데이터 부족"}
 
@@ -51,8 +51,7 @@ class ChartDataTool:
         return {"rsi": rsi_value, "signal": signal}
 
     @staticmethod
-    def get_macd(ticker: str) -> dict:
-        hist = _history(ticker)
+    def get_macd(hist) -> dict:
         if hist.empty or len(hist) < 35:
             return {"macd": None, "signal_line": None, "histogram": None, "cross": "데이터 부족"}
 
@@ -78,8 +77,7 @@ class ChartDataTool:
         }
 
     @staticmethod
-    def get_bollinger_bands(ticker: str) -> dict:
-        hist = _history(ticker)
+    def get_bollinger_bands(hist) -> dict:
         if hist.empty or len(hist) < 20:
             return {"upper": None, "mid": None, "lower": None, "position": "데이터 부족"}
 
@@ -100,9 +98,11 @@ class ChartDataTool:
 
     @classmethod
     def get_all(cls, ticker: str) -> dict:
+        # Yahoo Finance의 rate limit을 피하기 위해 history를 한 번만 조회해 공유한다.
+        hist = _history(ticker)
         return {
-            "moving_averages": cls.get_moving_averages(ticker),
-            "rsi": cls.get_rsi(ticker),
-            "macd": cls.get_macd(ticker),
-            "bollinger_bands": cls.get_bollinger_bands(ticker),
+            "moving_averages": cls.get_moving_averages(hist),
+            "rsi": cls.get_rsi(hist),
+            "macd": cls.get_macd(hist),
+            "bollinger_bands": cls.get_bollinger_bands(hist),
         }

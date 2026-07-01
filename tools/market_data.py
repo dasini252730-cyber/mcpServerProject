@@ -3,11 +3,16 @@
 import numpy as np
 import yfinance as yf
 
+from tools.yf_session import get_session
+
+
+def _ticker(ticker: str) -> yf.Ticker:
+    return yf.Ticker(ticker, session=get_session())
+
 
 class MarketDataTool:
     @staticmethod
-    def get_price_data(ticker: str) -> dict:
-        info = yf.Ticker(ticker).info
+    def get_price_data(info: dict) -> dict:
         return {
             "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
             "week52_high": info.get("fiftyTwoWeekHigh"),
@@ -18,8 +23,7 @@ class MarketDataTool:
         }
 
     @staticmethod
-    def get_financial_data(ticker: str) -> dict:
-        info = yf.Ticker(ticker).info
+    def get_financial_data(info: dict) -> dict:
         return {
             "per": info.get("trailingPE"),
             "pbr": info.get("priceToBook"),
@@ -30,8 +34,7 @@ class MarketDataTool:
         }
 
     @staticmethod
-    def get_momentum_data(ticker: str) -> dict:
-        hist = yf.Ticker(ticker).history(period="1y")
+    def get_momentum_data(hist) -> dict:
         if hist.empty:
             return {"return_1m": None, "return_3m": None, "return_6m": None, "return_1y": None}
 
@@ -50,9 +53,7 @@ class MarketDataTool:
         }
 
     @staticmethod
-    def get_volatility_data(ticker: str) -> dict:
-        info = yf.Ticker(ticker).info
-        hist = yf.Ticker(ticker).history(period="1y")
+    def get_volatility_data(info: dict, hist) -> dict:
         if hist.empty:
             return {"beta": info.get("beta"), "std_dev": None, "mdd": None}
 
@@ -72,9 +73,13 @@ class MarketDataTool:
 
     @classmethod
     def get_all(cls, ticker: str) -> dict:
+        # Yahoo Finance의 rate limit을 피하기 위해 info/history를 한 번씩만 조회해 공유한다.
+        t = _ticker(ticker)
+        info = t.info
+        hist = t.history(period="1y")
         return {
-            "price": cls.get_price_data(ticker),
-            "financial": cls.get_financial_data(ticker),
-            "momentum": cls.get_momentum_data(ticker),
-            "volatility": cls.get_volatility_data(ticker),
+            "price": cls.get_price_data(info),
+            "financial": cls.get_financial_data(info),
+            "momentum": cls.get_momentum_data(hist),
+            "volatility": cls.get_volatility_data(info, hist),
         }

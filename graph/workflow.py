@@ -22,11 +22,13 @@ from utils.formatter import format_report
 def collect_data_node(state: dict) -> dict:
     import yfinance as yf
 
+    from tools.yf_session import get_session
+
     ticker = state["ticker"]
     company_name = state.get("company_name")
     if not company_name:
         try:
-            company_name = yf.Ticker(ticker).info.get("shortName") or ticker
+            company_name = yf.Ticker(ticker, session=get_session()).info.get("shortName") or ticker
         except Exception:  # noqa: BLE001
             company_name = ticker
 
