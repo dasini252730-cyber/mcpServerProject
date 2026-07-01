@@ -113,8 +113,16 @@ if submitted:
         st.info(f"일부 데이터 수집에 실패했지만 분석을 계속했습니다: {final_state['error']}")
 
     st.subheader("📊 각 Agent 의견")
-    rows = opinions_table_rows(final_state.get("opinions", {}))
+    opinions = final_state.get("opinions", {})
+    rows = opinions_table_rows(opinions)
     if rows:
+        agent_errors = [op["error"] for op in opinions.values() if op.get("error")]
+        if agent_errors and len(agent_errors) == len(opinions):
+            st.error(
+                "모든 Agent의 LLM 호출이 실패해 기본값(관망)만 표시되고 있습니다. "
+                "ANTHROPIC_API_KEY가 올바른지, 모델 접근 권한이 있는지 확인하세요.\n\n"
+                f"오류 예시: {agent_errors[0]}"
+            )
         st.dataframe(rows, hide_index=True, use_container_width=True)
     else:
         st.warning("Agent 의견을 가져오지 못했습니다.")

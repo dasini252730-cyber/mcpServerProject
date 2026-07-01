@@ -26,14 +26,14 @@ def opinions_table_rows(opinions: dict) -> list[dict]:
         op = opinions.get(key)
         if not op:
             continue
-        rows.append(
-            {
-                "Agent": AGENT_LABELS.get(key, key),
-                "판단": f"{verdict_emoji(op.get('verdict', ''))} {op.get('verdict', '-')}",
-                "점수": op.get("score", "-"),
-                "핵심 근거": op.get("reason", "-"),
-            }
-        )
+        row = {
+            "Agent": AGENT_LABELS.get(key, key),
+            "판단": f"{verdict_emoji(op.get('verdict', ''))} {op.get('verdict', '-')}",
+            "점수": op.get("score", "-"),
+            "핵심 근거": op.get("reason", "-"),
+            "오류 (LLM 호출 실패)": op.get("error", ""),
+        }
+        rows.append(row)
     return rows
 
 
@@ -73,6 +73,8 @@ def format_report(state: dict) -> str:
             lines.append(f"- 최악 시나리오: {op['worst_case']}")
         if key == "behavioral" and op.get("market_emotion"):
             lines.append(f"- 시장 심리: {op['market_emotion']}")
+        if op.get("error"):
+            lines.append(f"- ⚠️ LLM 호출 실패로 기본값이 사용됨: `{op['error']}`")
         lines.append("")
 
     lines += [
