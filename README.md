@@ -70,7 +70,15 @@ Fear & Greed Index는 별도 API 키 없이 공개 엔드포인트를 조회하�
 1. GitHub에 리포지토리를 push합니다.
 2. [streamlit.io](https://streamlit.io) → New app → GitHub 리포지토리 연결
 3. App 설정에서 `app.py`를 엔트리포인트로 지정
-4. Settings → Secrets에 `.env`와 동일한 키/값을 입력
+4. Settings → Secrets에 아래처럼 **TOML 형식**으로 입력 (`.env`의 `KEY=value` 형식이 아니라 값에 따옴표가 필요합니다):
+
+   ```toml
+   ANTHROPIC_API_KEY = "sk-ant-..."
+   NEWS_API_KEY = "..."
+   FRED_API_KEY = "..."
+   ANTHROPIC_MODEL = "claude-sonnet-5"
+   ```
+
 5. Deploy
 
 ## 면책 고지
