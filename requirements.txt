@@ -1,0 +1,14 @@
+anthropic
+langchain
+langchain-anthropic
+langgraph
+yfinance
+pandas
+numpy
+ta
+fredapi
+newsapi-python
+streamlit
+python-dotenv
+plotly
+requests
