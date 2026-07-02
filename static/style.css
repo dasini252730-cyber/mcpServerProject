@@ -356,6 +356,103 @@ body {
   line-height: 1.5;
 }
 
+/* Agent 점수 비교 막대차트 */
+.score-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 32px;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+}
+
+.score-row-label {
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-row-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--gridline);
+  overflow: hidden;
+}
+
+.score-row-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.score-row-fill.tone-good {
+  background: var(--good);
+}
+
+.score-row-fill.tone-warning {
+  background: var(--warning);
+}
+
+.score-row-fill.tone-critical {
+  background: var(--critical);
+}
+
+.score-row-value {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 0~100 게이지 (RSI, Fear & Greed) */
+.gauge-row {
+  margin-bottom: 0.5rem;
+}
+
+.gauge-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.gauge-track {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--gridline);
+  margin-bottom: 1.1rem;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.gauge-marker {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  border: 2px solid var(--surface-2);
+  transform: translate(-50%, -50%);
+}
+
+.gauge-tick {
+  position: absolute;
+  top: 10px;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
 /* Agent 의견 카드 */
 .opinions-grid {
   display: grid;

@@ -123,20 +123,73 @@ function flattenEvidence(data, prefix = "") {
   return rows;
 }
 
+// 0~100 스케일 지표(RSI, Fear&Greed)는 막대 목록보다 게이지가 한눈에 들어와서
+// 별도 렌더링을 준다. 색은 좋다/나쁘다가 아니라 "어디쯤인지"만 중립적으로 보여주고,
+// 실제 해석(과매수/공포 등)은 이미 옆에 붙는 텍스트 라벨이 전담한다.
+const GAUGE_PATHS = {
+  "rsi.rsi": { min: 0, max: 100, ticks: [30, 70] },
+  "fear_greed.score": { min: 0, max: 100, ticks: [20, 80] },
+};
+
+function gaugeHtml(label, value, config) {
+  const pct = Math.max(0, Math.min(100, ((value - config.min) / (config.max - config.min)) * 100));
+  const ticks = config.ticks
+    .map((t) => {
+      const tickPct = ((t - config.min) / (config.max - config.min)) * 100;
+      return `<span class="gauge-tick" style="left:${tickPct}%">${t}</span>`;
+    })
+    .join("");
+  return `
+    <div class="gauge-row">
+      <div class="gauge-head"><span class="evidence-key">${label}</span><span class="evidence-value">${value}</span></div>
+      <div class="gauge-track">
+        <div class="gauge-fill" style="width:${pct}%"></div>
+        <div class="gauge-marker" style="left:${pct}%"></div>
+        ${ticks}
+      </div>
+    </div>
+  `;
+}
+
 function renderEvidence(evidence) {
   const rows = flattenEvidence(evidence);
   if (rows.length === 0) {
     return `<p class="evidence-empty">근거로 사용할 데이터를 가져오지 못했습니다.</p>`;
   }
-  return rows
-    .map(([path, key, value]) => {
-      const label = METRIC_LABELS[path] || METRIC_LABELS[key] || path;
-      return `<div class="evidence-row"><span class="evidence-key">${label}</span><span class="evidence-value">${formatValue(
-        key,
-        value
-      )}</span></div>`;
-    })
-    .join("");
+  const gauges = [];
+  const plain = [];
+  rows.forEach(([path, key, value]) => {
+    const label = METRIC_LABELS[path] || METRIC_LABELS[key] || path;
+    if (GAUGE_PATHS[path] && typeof value === "number") {
+      gauges.push(gaugeHtml(label, value, GAUGE_PATHS[path]));
+    } else {
+      plain.push(
+        `<div class="evidence-row"><span class="evidence-key">${label}</span><span class="evidence-value">${formatValue(
+          key,
+          value
+        )}</span></div>`
+      );
+    }
+  });
+  return gauges.join("") + plain.join("");
+}
+
+function scoreChartHtml(opinions) {
+  const rows = AGENT_ORDER.filter((key) => opinions[key]).map((key) => {
+    const op = opinions[key];
+    const cfg = verdictConfig(op.verdict);
+    const score = Math.max(0, Math.min(100, op.score ?? 0));
+    return `
+      <div class="score-row">
+        <span class="score-row-label">${AGENT_ICONS[key] || ""} ${AGENT_LABELS[key] || key}</span>
+        <div class="score-row-track">
+          <div class="score-row-fill tone-${cfg.tone}" style="width:${score}%"></div>
+        </div>
+        <span class="score-row-value">${score}</span>
+      </div>
+    `;
+  });
+  return rows.join("");
 }
 
 function resetUI() {
@@ -233,6 +286,7 @@ function renderResult(data) {
     dataErrorNote.classList.add("hidden");
   }
 
+  document.getElementById("score-chart").innerHTML = scoreChartHtml(data.opinions || {});
   renderOpinions(data.opinions || {}, data.evidence || {});
 
   currentReportText = data.report || "";
