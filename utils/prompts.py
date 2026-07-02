@@ -172,6 +172,23 @@ def revise_prompt(
     return system, user
 
 
+def validation_prompt(agent_data: dict) -> tuple[str, str]:
+    system = (
+        "당신은 투자 분석 품질 감사관입니다. 각 Agent가 제시한 reason/detail이 함께 주어진 "
+        "근거 데이터(evidence)와 실제로 논리적으로 부합하는지 엄격하게 검증하세요. 데이터에 "
+        "없는 수치를 지어내거나, 데이터가 가리키는 방향과 반대되는 결론을 내렸거나, 근거 "
+        "없이 막연한 낙관/비관을 내세웠다면 grounded를 false로 표시하세요."
+    )
+    user = f"""[검증 대상: Agent별 의견과 그 근거로 제공된 데이터]
+{_dumps(agent_data)}
+
+각 Agent 키에 대해 grounded(true/false)와 note(문제가 있다면 한 줄 설명, 없으면 빈 문자열)를
+판단하세요. 검증 대상에 없는 키는 만들지 마세요.
+{_json_only('{"<agent_key>": {"grounded": true 또는 false, "note": "문제 설명 또는 빈 문자열"}, "...": "..."}')}
+"""
+    return system, user
+
+
 def orchestrator_prompt(
     state: dict, final_verdict: str, final_score: float, confidence: str
 ) -> tuple[str, str]:

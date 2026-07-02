@@ -20,17 +20,20 @@ def verdict_emoji(verdict: str) -> str:
     return VERDICT_EMOJI.get(verdict, "⚪")
 
 
-def opinions_table_rows(opinions: dict) -> list[dict]:
+def opinions_table_rows(opinions: dict, validation: dict = None) -> list[dict]:
+    validation = validation or {}
     rows = []
     for key in AGENT_ORDER:
         op = opinions.get(key)
         if not op:
             continue
+        grounded = validation.get(key, {}).get("grounded", True)
         row = {
             "Agent": AGENT_LABELS.get(key, key),
             "판단": f"{verdict_emoji(op.get('verdict', ''))} {op.get('verdict', '-')}",
             "점수": op.get("score", "-"),
             "핵심 근거": op.get("reason", "-"),
+            "근거 확인": "✅ 확인됨" if grounded else "⚠️ 근거 부족",
             "오류 (LLM 호출 실패)": op.get("error", ""),
         }
         rows.append(row)
@@ -80,6 +83,7 @@ def format_report(state: dict) -> str:
     final_reason = state.get("final_reason", "")
     dissenting_opinion = state.get("dissenting_opinion", "")
     opinions = state.get("opinions", {})
+    validation = state.get("validation", {})
     evidence = agent_evidence(state)
 
     lines = [
@@ -110,6 +114,11 @@ def format_report(state: dict) -> str:
             lines.append(f"- 시장 심리: {op['market_emotion']}")
         if op.get("error"):
             lines.append(f"- ⚠️ LLM 호출 실패로 기본값이 사용됨: `{op['error']}`")
+
+        agent_validation = validation.get(key)
+        if agent_validation and not agent_validation.get("grounded", True):
+            note = agent_validation.get("note", "")
+            lines.append(f"- ⚠️ 근거 검증 실패 — 최종 판단에서 제외됨: {note}")
 
         evidence_items = _flatten_evidence(evidence.get(key, {}))
         if evidence_items:

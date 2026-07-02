@@ -354,6 +354,7 @@ body {
   padding: 1rem 1.1rem;
   font-size: 0.92rem;
   line-height: 1.5;
+  white-space: pre-line;
 }
 
 /* Agent 점수 비교 막대차트 */
@@ -479,6 +480,21 @@ body {
 
 .opinion-card.tone-critical {
   border-left-color: var(--critical);
+}
+
+.opinion-card.not-grounded {
+  opacity: 0.72;
+  border-left-style: dashed;
+}
+
+.badge-grounded {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.badge-not-grounded {
+  background: var(--critical-soft);
+  color: var(--critical);
 }
 
 .opinion-header {

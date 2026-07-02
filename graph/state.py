@@ -37,12 +37,16 @@ class StockState(TypedDict):
     # 6개 Agent가 병렬로 기록 -> 병합 reducer 필요
     opinions: Annotated[dict, merge_dicts]
 
+    # validate 노드가 단독으로 기록: {agent_key: {"grounded": bool, "note": str}}
+    validation: dict
+
     # 최종 결과 (orchestrate/generate_report 노드에서만 기록)
     final_verdict: str
     final_score: float
     confidence: str
     final_reason: str
     dissenting_opinion: str
+    excluded_agents: list
     report: str
 
     # 메타 (여러 노드에서 기록될 수 있어 병합 reducer 필요)

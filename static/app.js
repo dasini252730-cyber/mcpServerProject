@@ -216,15 +216,16 @@ function markNodeDone(node) {
   if (nextPending) nextPending.classList.add("active");
 }
 
-function renderOpinions(opinions, evidence) {
+function renderOpinions(opinions, evidence, validation) {
   const grid = document.getElementById("opinions-grid");
   grid.innerHTML = "";
   AGENT_ORDER.forEach((key) => {
     const op = opinions[key];
     if (!op) return;
     const cfg = verdictConfig(op.verdict);
+    const v = validation[key] || { grounded: true, note: "" };
     const card = document.createElement("div");
-    card.className = `opinion-card tone-${cfg.tone}`;
+    card.className = `opinion-card tone-${cfg.tone}${v.grounded ? "" : " not-grounded"}`;
     card.innerHTML = `
       <div class="opinion-header">
         <span class="opinion-agent"><span class="opinion-icon">${AGENT_ICONS[key] || ""}</span>${
@@ -232,6 +233,9 @@ function renderOpinions(opinions, evidence) {
     }</span>
         <span class="badge badge-${cfg.tone}">${cfg.emoji} ${op.verdict || "-"}</span>
       </div>
+      <span class="badge ${v.grounded ? "badge-grounded" : "badge-not-grounded"} mb-4">${
+      v.grounded ? "✅ 근거 확인됨" : "⚠️ 근거 부족 · 최종 판단에서 제외"
+    }</span>
       <div class="meter-track"><div class="meter-fill" style="width:${Math.max(
         0,
         Math.min(100, op.score ?? 0)
@@ -249,6 +253,11 @@ function renderOpinions(opinions, evidence) {
           : ""
       }
       ${op.error ? `<p class="opinion-error">⚠️ LLM 호출 실패로 기본값이 사용됨: ${op.error}</p>` : ""}
+      ${
+        !v.grounded && v.note
+          ? `<p class="opinion-error">⚠️ 근거 검증: ${v.note}</p>`
+          : ""
+      }
       <details>
         <summary class="evidence-toggle">근거 데이터</summary>
         <div class="evidence-list">${renderEvidence(evidence[key] || {})}</div>
@@ -287,7 +296,7 @@ function renderResult(data) {
   }
 
   document.getElementById("score-chart").innerHTML = scoreChartHtml(data.opinions || {});
-  renderOpinions(data.opinions || {}, data.evidence || {});
+  renderOpinions(data.opinions || {}, data.evidence || {}, data.validation || {});
 
   currentReportText = data.report || "";
   document.getElementById("report-text").textContent = currentReportText;

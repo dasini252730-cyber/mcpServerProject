@@ -9,6 +9,7 @@ from agents import (
     orchestrator,
     quant_agent,
     risk_agent,
+    validator_agent,
     value_agent,
 )
 from graph.state import StockState
@@ -94,6 +95,7 @@ def build_graph():
     for key, module in AGENT_MODULES.items():
         graph.add_node(f"analyze_{key}", module.analyze)
         graph.add_node(f"revise_{key}", module.revise)
+    graph.add_node("validate", validator_agent.validate)
     graph.add_node("orchestrate", orchestrator.synthesize)
     graph.add_node("generate_report", generate_report_node)
 
@@ -112,9 +114,13 @@ def build_graph():
         for analyze_key in AGENT_MODULES:
             graph.add_edge(f"analyze_{analyze_key}", f"revise_{revise_key}")
 
-    # 재검토된 6개 의견이 모두 끝난 후 Orchestrator로 수렴
+    # 재검토된 6개 의견이 모두 끝난 후 검증 단계로 수렴: 각 Agent의 판단이 실제
+    # 근거 데이터에 기반하는지 확인한다 (데이터가 없는데 확신에 찬 판단을 내놓는 것 방지).
     for key in AGENT_MODULES:
-        graph.add_edge(f"revise_{key}", "orchestrate")
+        graph.add_edge(f"revise_{key}", "validate")
+
+    # 검증 결과를 반영해 Orchestrator가 최종 종합
+    graph.add_edge("validate", "orchestrate")
 
     # 최종 리포트 생성
     graph.add_edge("orchestrate", "generate_report")
