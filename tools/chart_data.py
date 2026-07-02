@@ -5,11 +5,12 @@ from ta.momentum import RSIIndicator
 from ta.trend import MACD, SMAIndicator
 from ta.volatility import BollingerBands
 
-from tools.yf_session import get_session
+from tools.yf_session import fetch_with_retry, get_session
 
 
 def _history(ticker: str):
-    return yf.Ticker(ticker, session=get_session()).history(period="1y")
+    t = yf.Ticker(ticker, session=get_session())
+    return fetch_with_retry(lambda: t.history(period="1y"))
 
 
 class ChartDataTool:

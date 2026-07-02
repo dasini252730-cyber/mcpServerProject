@@ -3,7 +3,7 @@
 import numpy as np
 import yfinance as yf
 
-from tools.yf_session import get_session
+from tools.yf_session import fetch_with_retry, get_session
 
 
 def _ticker(ticker: str) -> yf.Ticker:
@@ -73,10 +73,11 @@ class MarketDataTool:
 
     @classmethod
     def get_all(cls, ticker: str) -> dict:
-        # Yahoo Finance의 rate limit을 피하기 위해 info/history를 한 번씩만 조회해 공유한다.
+        # Yahoo Finance의 rate limit을 피하기 위해 info/history를 한 번씩만 조회해 공유하고,
+        # 일시적인 rate limit에는 짧게 재시도한다.
         t = _ticker(ticker)
-        info = t.info
-        hist = t.history(period="1y")
+        info = fetch_with_retry(lambda: t.info)
+        hist = fetch_with_retry(lambda: t.history(period="1y"))
         return {
             "price": cls.get_price_data(info),
             "financial": cls.get_financial_data(info),
