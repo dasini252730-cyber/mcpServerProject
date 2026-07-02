@@ -8,8 +8,8 @@ numpy
 ta
 fredapi
 newsapi-python
-streamlit
+fastapi
+uvicorn[standard]
 python-dotenv
-plotly
 requests
 curl_cffi

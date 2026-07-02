@@ -37,6 +37,40 @@ def opinions_table_rows(opinions: dict) -> list[dict]:
     return rows
 
 
+def agent_evidence(state: dict) -> dict:
+    """각 Agent가 실제로 근거로 삼은 원본 데이터를 뽑아준다.
+
+    utils/prompts.py의 각 *_prompt() 함수가 state에서 어떤 부분을 꺼내
+    프롬프트에 넣는지와 동일한 매핑을 사용해, "왜 이런 판단이 나왔는지"를
+    화면에서 확인할 수 있게 한다.
+    """
+    market = state.get("market_data", {})
+    macro = state.get("macro_data", {})
+    news = state.get("news_data", {})
+    return {
+        "value": market.get("financial", {}),
+        "quant": {**market.get("financial", {}), **market.get("momentum", {})},
+        "macro": macro,
+        "chart": state.get("chart_data", {}),
+        "risk": market.get("volatility", {}),
+        "behavioral": {
+            "news_sentiment": news.get("sentiment", {}),
+            "fear_greed": macro.get("fear_greed", {}),
+        },
+    }
+
+
+def _flatten_evidence(data: dict, prefix: str = "") -> list[tuple[str, object]]:
+    items = []
+    for key, value in data.items():
+        label = f"{prefix}{key}"
+        if isinstance(value, dict):
+            items.extend(_flatten_evidence(value, prefix=f"{label}."))
+        elif value not in (None, "", "note"):
+            items.append((label, value))
+    return items
+
+
 def format_report(state: dict) -> str:
     ticker = state.get("ticker", "")
     company_name = state.get("company_name", "")
@@ -46,6 +80,7 @@ def format_report(state: dict) -> str:
     final_reason = state.get("final_reason", "")
     dissenting_opinion = state.get("dissenting_opinion", "")
     opinions = state.get("opinions", {})
+    evidence = agent_evidence(state)
 
     lines = [
         f"# {company_name} ({ticker}) 분석 리포트",
@@ -75,6 +110,13 @@ def format_report(state: dict) -> str:
             lines.append(f"- 시장 심리: {op['market_emotion']}")
         if op.get("error"):
             lines.append(f"- ⚠️ LLM 호출 실패로 기본값이 사용됨: `{op['error']}`")
+
+        evidence_items = _flatten_evidence(evidence.get(key, {}))
+        if evidence_items:
+            lines.append("")
+            lines.append("**근거 데이터**")
+            for label, value in evidence_items:
+                lines.append(f"- {label}: {value}")
         lines.append("")
 
     lines += [
