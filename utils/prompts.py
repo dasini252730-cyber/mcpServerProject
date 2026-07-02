@@ -150,6 +150,28 @@ def behavioral_prompt(state: dict) -> tuple[str, str]:
     return system, user
 
 
+def revise_prompt(
+    agent_label: str, own_opinion: dict, peer_opinions: dict, schema_desc: str
+) -> tuple[str, str]:
+    system = (
+        f"당신은 {agent_label} 관점의 애널리스트입니다. 이미 1차 의견을 냈고, 이제 다른 5명의 "
+        "전문가가 각자 다른 관점에서 낸 1차 의견을 볼 수 있습니다. 다른 관점에 설득력 있는 "
+        "근거가 있다면 당신의 판단을 조정하고, 그렇지 않다면 원래 의견을 유지하세요. "
+        f"당신의 전문 분야({agent_label}) 밖의 이유만으로 무작정 다수 의견에 따르지 마세요."
+    )
+    user = f"""[당신의 1차 의견]
+{_dumps(own_opinion)}
+
+[다른 전문가들의 1차 의견]
+{_dumps(peer_opinions)}
+
+다른 전문가들의 의견을 검토한 뒤 최종 의견을 내세요. 의견을 바꿨다면 reason/detail에 왜 바꿨는지,
+유지했다면 왜 유지했는지를 반영하세요.
+{_json_only(schema_desc)}
+"""
+    return system, user
+
+
 def orchestrator_prompt(
     state: dict, final_verdict: str, final_score: float, confidence: str
 ) -> tuple[str, str]:

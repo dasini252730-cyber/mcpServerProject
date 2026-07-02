@@ -76,38 +76,45 @@ def generate_report_node(state: dict) -> dict:
     }
 
 
+AGENT_MODULES = {
+    "value": value_agent,
+    "quant": quant_agent,
+    "macro": macro_agent,
+    "chart": chart_agent,
+    "risk": risk_agent,
+    "behavioral": behavioral_agent,
+}
+
+
 def build_graph():
     graph = StateGraph(StockState)
 
     # Node 등록
     graph.add_node("collect_data", collect_data_node)
-    graph.add_node("analyze_value", value_agent.analyze)
-    graph.add_node("analyze_quant", quant_agent.analyze)
-    graph.add_node("analyze_macro", macro_agent.analyze)
-    graph.add_node("analyze_chart", chart_agent.analyze)
-    graph.add_node("analyze_risk", risk_agent.analyze)
-    graph.add_node("analyze_behavioral", behavioral_agent.analyze)
+    for key, module in AGENT_MODULES.items():
+        graph.add_node(f"analyze_{key}", module.analyze)
+        graph.add_node(f"revise_{key}", module.revise)
     graph.add_node("orchestrate", orchestrator.synthesize)
     graph.add_node("generate_report", generate_report_node)
 
     # Edge 연결
     graph.set_entry_point("collect_data")
 
-    # 데이터 수집 후 6개 Agent 병렬 실행
-    graph.add_edge("collect_data", "analyze_value")
-    graph.add_edge("collect_data", "analyze_quant")
-    graph.add_edge("collect_data", "analyze_macro")
-    graph.add_edge("collect_data", "analyze_chart")
-    graph.add_edge("collect_data", "analyze_risk")
-    graph.add_edge("collect_data", "analyze_behavioral")
+    # 1차 라운드: 데이터 수집 후 6개 Agent 독립 병렬 분석
+    for key in AGENT_MODULES:
+        graph.add_edge("collect_data", f"analyze_{key}")
 
-    # 6개 완료 후 Orchestrator로 수렴
-    graph.add_edge("analyze_value", "orchestrate")
-    graph.add_edge("analyze_quant", "orchestrate")
-    graph.add_edge("analyze_macro", "orchestrate")
-    graph.add_edge("analyze_chart", "orchestrate")
-    graph.add_edge("analyze_risk", "orchestrate")
-    graph.add_edge("analyze_behavioral", "orchestrate")
+    # 2차 라운드: 6개 1차 분석이 모두 끝난 뒤에만 각 Agent의 재검토가 시작되도록
+    # barrier를 건다 (각 revise 노드는 자신을 포함한 6개 analyze 노드 전부에 의존).
+    # 재검토 단계에서 각 Agent는 자신의 1차 의견과 동료 5명의 1차 의견을 함께 보고
+    # 판단을 유지하거나 조정한다.
+    for revise_key in AGENT_MODULES:
+        for analyze_key in AGENT_MODULES:
+            graph.add_edge(f"analyze_{analyze_key}", f"revise_{revise_key}")
+
+    # 재검토된 6개 의견이 모두 끝난 후 Orchestrator로 수렴
+    for key in AGENT_MODULES:
+        graph.add_edge(f"revise_{key}", "orchestrate")
 
     # 최종 리포트 생성
     graph.add_edge("orchestrate", "generate_report")
